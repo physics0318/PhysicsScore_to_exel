@@ -72,7 +72,6 @@ class mainWindow():
                 msg.showerror("경고", "파일이 선택되지 않았습니다.")
         
         self.display(self.scores)
-        
 
     def saveAs(self):
         f = fd.asksaveasfilename(title="다른 이름으로 저장하기", filetypes=(("xlsx files", "*.xlsx"), ("All files", "*.*")))
@@ -83,14 +82,14 @@ class mainWindow():
             print("파일의 이름을 작성하지 않았습니다.")
 
     def dataInput(self):
-        try:
-            inputWindow = tk.Toplevel(self.master)
-            inputWindow.title("데이터 입력")
-            inputWindow.geometry("250x150+100+100")
-            inputWindow.resizable(False, False)
-            i = inputDataWindow(self.master, inputWindow)
-        except AttributeError:
-            msg.showerror("경고", "파일을 선택하거나 생성해주세요.")
+    # try:
+        inputWindow = tk.Toplevel(self.master)
+        inputWindow.title("데이터 입력")
+        inputWindow.geometry("250x150+100+100")
+        inputWindow.resizable(False, False)
+        i = inputDataWindow(self.master, inputWindow, self.scores)
+    # except AttributeError:
+    #     msg.showerror("경고", "파일을 선택하거나 생성해주세요.")
 
 class newFileWindow:
     def __init__(self, root, master):
@@ -199,17 +198,23 @@ class newFileWindow:
             return False
 
 class inputDataWindow:
-    def __init__(self, root, master):
+    def __init__(self, root, master, data):
         self.master = master
         self.root = root
-        self.data = mainWindow.scores
-        self.ev = self.data
+        self.data = data
+        self.ev = []
+        for i in self.data:
+            self.ev.append(i)
+        self.ev.remove("학번")
+        self.ev.remove("이름")
+        self.studentFocus = 0
+        self.evFocus = 0
 
-        self.evMinusBtn = tk.Button(self.master, text="<<", command=lambda: self.evPlusMinus(plus=False))
+        self.evMinusBtn = tk.Button(self.master, text="<<", command=lambda: self.studentPlusMinus(plus=False))
         self.evMinusBtn.grid(row=0, column=0)
         self.rowLbl = tk.Label(self.master, text="학생 (1/"+str(len(self.data))+")")
         self.rowLbl.grid(row=0, column=1, columnspan=2)
-        self.evPlusBtn = tk.Button(self.master, text=">>", command=lambda: self.evPlusMinus(plus=True))
+        self.evPlusBtn = tk.Button(self.master, text=">>", command=lambda: self.studentPlusMinus(plus=True))
         self.evPlusBtn.grid(row=0, column=3)
 
         self.evMinusBtn = tk.Button(self.master, text="<<", command=lambda: self.evPlusMinus(plus=False))
@@ -222,27 +227,60 @@ class inputDataWindow:
         self.studentLbl = tk.Label(self.master, text="학번")
         self.studentLbl.grid(row=2, column=1)
         self.studentEnt = tk.Entry(self.master)
+        self.studentEnt.insert(0, self.data['학번'][self.studentFocus])
         self.studentEnt.grid(row=2, column=2)
 
         self.nameLbl = tk.Label(self.master, text="이름")
         self.nameLbl.grid(row=3, column=1)
         self.nameEnt = tk.Entry(self.master)
+        self.nameEnt.insert(0, self.data['이름'][self.studentFocus])
         self.nameEnt.grid(row=3, column=2)
 
         self.scoreLbl = tk.Label(self.master, text="점수")
         self.scoreLbl.grid(row=4, column=1)
         self.scoreEnt = tk.Entry(self.master)
+        self.scoreEnt.insert(0, self.data[self.ev[self.evFocus]][self.studentFocus])
         self.scoreEnt.grid(row=4, column=2)
 
         self.ontopValue = IntVar()
         self.ontopCheck = tk.Checkbutton(self.master, text="모든 창 위에 항상고정", variable=self.ontopValue, command=self.ontop)
         self.ontopCheck.grid(row=5, column=0, columnspan=4, sticky=tk.SW)
 
+    def updateEntries(self):
+        self.studentEnt.delete(0, 'end')
+        self.nameEnt.delete(0, 'end')
+        self.scoreEnt.delete(0, 'end')
+
+        self.studentEnt.insert(0, self.data['학번'][self.studentFocus])
+        self.nameEnt.insert(0, self.data['이름'][self.studentFocus])
+        self.scoreEnt.insert(0, self.data[self.ev[self.evFocus]][self.studentFocus])
+
+        self.rowLbl.config(text="학생 ("+str(self.studentFocus+1)+"/"+str(len(self.data))+")")
+        self.columnLbl.config(text="평가항목: "+str(self.ev[self.evFocus])+"("+str(self.evFocus+1)+"/"+str(len(self.data.columns)-2)+")")
+
+    def studentPlusMinus(self, plus=True):
+        if plus:
+            self.studentFocus += 1
+            if self.studentFocus >= len(self.data):
+                self.studentFocus = 0
+        else:
+            self.studentFocus -= 1
+            if self.studentFocus < 0:
+                self.studentFocus = len(self.data)-1
+        
+        self.updateEntries()
+
     def evPlusMinus(self, plus=True):
         if plus:
-            print("hey")
+            self.evFocus += 1
+            if self.evFocus >= len(self.ev):
+                self.evFocus = 0
         else:
-            print("hey")
+            self.evFocus -= 1
+            if self.evFocus < 0:
+                self.evFocus = len(self.ev)-1
+
+        self.updateEntries()
 
     def ontop(self):
         if self.ontopValue.get() == 1:
@@ -260,7 +298,7 @@ I.파일관리
 
 II.점수관리
     1. 채점툴 - 기존에 만든 채점툴 활용
-    2. 계산 - 지정한 범위의 학생들의 평균, 최고점, 최저점, 표준편차 등을 보여주는 툴
+    2. 통계 - 지정한 범위의 학생들의 평균, 최고점, 최저점, 표준편차 등을 보여주는 툴
     3. 시각화툴 - 그래프로 여러가지를 보여주는 툴
 '''
 
