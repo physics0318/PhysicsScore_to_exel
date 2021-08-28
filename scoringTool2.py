@@ -1,10 +1,12 @@
 import numpy as np
+from openpyxl.reader.excel import load_workbook
 import pandas as pd
 
 import tkinter as tk
 from tkinter import IntVar, ttk
 from tkinter import filedialog as fd
 from tkinter import messagebox as msg
+from openpyxl import workbook
 
 class mainWindow():
     def __init__(self, master):
@@ -14,6 +16,7 @@ class mainWindow():
         self.fMenu = tk.Menu(self.mainMenu, tearoff=0)
         self.fMenu.add_command(label="새 파일", command=self.newFile)
         self.fMenu.add_command(label="파일 열기", command=self.openFile)
+        self.fMenu.add_command(label="저장", command=self.saveFile)
         self.fMenu.add_command(label="다른 이름으로 저장", command=self.saveAs)
         self.mainMenu.add_cascade(label="파일", menu=self.fMenu)
 
@@ -74,11 +77,17 @@ class mainWindow():
         
         self.display(self.scores)
 
+    def saveFile(self):
+        try:
+            self.scores.to_excel(self.f, index=False)
+        except AttributeError:
+            self.saveAs()
+
     def saveAs(self):
         f = fd.asksaveasfilename(title="다른 이름으로 저장하기", filetypes=(("xlsx files", "*.xlsx"), ("All files", "*.*")))
         if f:
             self.f = f + ".xlsx"
-            self.scores.to_excel(self.f)
+            self.scores.to_excel(self.f, index=False)
         else:
             print("파일의 이름을 작성하지 않았습니다.")
 
@@ -268,17 +277,17 @@ class inputDataWindow:
         self.nameEnt.insert(0, self.data['이름'][self.studentFocus])
         self.scoreEnt.insert(0, self.data[self.ev[self.evFocus]][self.studentFocus])
 
-        self.rowLbl.config(text="학생 ("+str(self.studentFocus+1)+"/"+str(len(self.data))+")")
+        self.rowLbl.config(text="학생 ("+str(self.studentFocus)+"/"+str(len(self.data))+")")
         self.columnLbl.config(text="평가항목: "+str(self.ev[self.evFocus])+"("+str(self.evFocus+1)+"/"+str(len(self.data.columns)-2)+")")
 
     def studentPlusMinus(self, plus=True):
         if plus:
             self.studentFocus += 1
-            if self.studentFocus >= len(self.data):
-                self.studentFocus = 0
+            if self.studentFocus > len(self.data):
+                self.studentFocus = 1
         else:
             self.studentFocus -= 1
-            if self.studentFocus < 0:
+            if self.studentFocus < 1:
                 self.studentFocus = len(self.data)-1
         
         self.updateEntries()
