@@ -66,6 +66,7 @@ class mainWindow():
             try:
                 self.f = r"{}".format(self.f)
                 self.scores = pd.read_excel(self.f)
+                self.scores.index = self.scores.index + 1
             except ValueError:
                 msg.showerror("경고", "파일이 선택되지 않았습니다.")
             except FileNotFoundError:
@@ -82,14 +83,14 @@ class mainWindow():
             print("파일의 이름을 작성하지 않았습니다.")
 
     def dataInput(self):
-    # try:
-        inputWindow = tk.Toplevel(self.master)
-        inputWindow.title("데이터 입력")
-        inputWindow.geometry("250x150+100+100")
-        inputWindow.resizable(False, False)
-        i = inputDataWindow(self.master, inputWindow, self.scores)
-    # except AttributeError:
-    #     msg.showerror("경고", "파일을 선택하거나 생성해주세요.")
+        try:
+            inputWindow = tk.Toplevel(self.master)
+            inputWindow.title("데이터 입력")
+            inputWindow.geometry("250x150+100+100")
+            inputWindow.resizable(False, False)
+            i = inputDataWindow(self.master, inputWindow, self.scores)
+        except AttributeError:
+            msg.showerror("경고", "파일을 선택하거나 생성해주세요.")
 
 class newFileWindow:
     def __init__(self, root, master):
@@ -187,7 +188,7 @@ class newFileWindow:
     def mkDf(self):
         try:
             t = int(self.totalStudentEnt.get())
-            self.df = pd.DataFrame(data=np.zeros((t, len(self.evList)+2)), index=range(1, t+1), columns=["학번", "이름"]+self.evList)
+            self.df = pd.DataFrame(index=range(1, t+1), columns=["학번", "이름"]+self.evList)
             
             mainWindow.scores = self.df
             mainWindow.display(self.root, self.df)
@@ -207,21 +208,21 @@ class inputDataWindow:
             self.ev.append(i)
         self.ev.remove("학번")
         self.ev.remove("이름")
-        self.studentFocus = 0
+        self.studentFocus = 1
         self.evFocus = 0
 
-        self.evMinusBtn = tk.Button(self.master, text="<<", command=lambda: self.studentPlusMinus(plus=False))
+        self.evMinusBtn = tk.Button(self.master, text="<<", command=lambda:[self.updateData(), self.studentPlusMinus(plus=False)])
         self.evMinusBtn.grid(row=0, column=0)
         self.rowLbl = tk.Label(self.master, text="학생 (1/"+str(len(self.data))+")")
         self.rowLbl.grid(row=0, column=1, columnspan=2)
-        self.evPlusBtn = tk.Button(self.master, text=">>", command=lambda: self.studentPlusMinus(plus=True))
+        self.evPlusBtn = tk.Button(self.master, text=">>", command=lambda:[self.updateData(), self.studentPlusMinus(plus=True)])
         self.evPlusBtn.grid(row=0, column=3)
 
-        self.evMinusBtn = tk.Button(self.master, text="<<", command=lambda: self.evPlusMinus(plus=False))
+        self.evMinusBtn = tk.Button(self.master, text="<<", command=lambda:[self.updateData(), self.evPlusMinus(plus=False)])
         self.evMinusBtn.grid(row=1, column=0)
-        self.columnLbl = tk.Label(self.master, text="평가항목 (1/"+str(len(self.data.columns)-2)+")")
+        self.columnLbl = tk.Label(self.master, text="평가항목: 1주차(1/"+str(len(self.data.columns)-2)+")")
         self.columnLbl.grid(row=1, column=1, columnspan=2)
-        self.evPlusBtn = tk.Button(self.master, text=">>", command=lambda: self.evPlusMinus(plus=True))
+        self.evPlusBtn = tk.Button(self.master, text=">>", command=lambda:[self.updateData(), self.evPlusMinus(plus=True)])
         self.evPlusBtn.grid(row=1, column=3)
 
         self.studentLbl = tk.Label(self.master, text="학번")
@@ -245,6 +246,18 @@ class inputDataWindow:
         self.ontopValue = IntVar()
         self.ontopCheck = tk.Checkbutton(self.master, text="모든 창 위에 항상고정", variable=self.ontopValue, command=self.ontop)
         self.ontopCheck.grid(row=5, column=0, columnspan=4, sticky=tk.SW)
+
+        self.saveBtn = tk.Button(self.master, text='저장', command=lambda: [self.updateData(), self.save()])
+        self.saveBtn.grid(row=5, column=5)
+
+    def save(self):
+        mainWindow.scores = self.data
+        mainWindow.display(self.root, self.data)
+
+    def updateData(self):
+        self.data.at[self.studentFocus, '학번'] = self.studentEnt.get()
+        self.data.at[self.studentFocus, '이름'] = self.nameEnt.get()
+        self.data.at[self.studentFocus, self.ev[self.evFocus]]= self.scoreEnt.get()
 
     def updateEntries(self):
         self.studentEnt.delete(0, 'end')
@@ -294,12 +307,12 @@ O.필요한 함수들
 I.파일관리
     complete) 새 파일 - pandas 데이터프레임 만들기
     complete) 불러오기 - 엑셀파일을 불러와서 pandas 데이터프레임 만들기
-    complete) 저장하기 - pandas 데이터프레임 엑셀파일로 만들어서 저장하기
+    3. 저장하기 - 저장하기
+    complete) 다른 이름으로 저장하기 - pandas 데이터프레임 엑셀파일로 만들어서 저장하기
 
 II.점수관리
-    1. 채점툴 - 기존에 만든 채점툴 활용
-    2. 통계 - 지정한 범위의 학생들의 평균, 최고점, 최저점, 표준편차 등을 보여주는 툴
-    3. 시각화툴 - 그래프로 여러가지를 보여주는 툴
+    complete) 채점툴 - 기존에 만든 채점툴 활용
+    2. 통계툴 - 지정한 범위의 학생들의 평균, 최고점, 최저점, 표준편차 등을 표시하고 시각화
 '''
 
 def main():
