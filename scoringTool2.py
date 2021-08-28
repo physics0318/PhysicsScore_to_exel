@@ -1,12 +1,10 @@
 import numpy as np
-from openpyxl.reader.excel import load_workbook
 import pandas as pd
 
 import tkinter as tk
 from tkinter import IntVar, ttk
 from tkinter import filedialog as fd
 from tkinter import messagebox as msg
-from openpyxl import workbook
 
 class mainWindow():
     def __init__(self, master):
@@ -21,7 +19,8 @@ class mainWindow():
         self.mainMenu.add_cascade(label="파일", menu=self.fMenu)
 
         self.fMenu2 = tk.Menu(self.mainMenu, tearoff=0)
-        self.fMenu2.add_command(label="데이터 입력", command=self.dataInput)
+        self.fMenu2.add_command(label="편집", command=self.dataInput)
+        self.fMenu2.add_command(label="통계")
         self.mainMenu.add_cascade(label="데이터", menu=self.fMenu2)
 
         self.master.config(menu=self.mainMenu)
@@ -33,12 +32,9 @@ class mainWindow():
 
         self.scores = df
         self.treeScrollY = tk.Scrollbar(self.master, orient='vertical')
-        self.treeScrollX = tk.Scrollbar(self.master, orient='horizontal')
         self.treeScrollY.grid(row=0, column=1, sticky=tk.NE + tk.SE)
-        self.treeScrollX.grid(row=1, column=0, sticky=tk.SW + tk.SE)
-        self.tree = ttk.Treeview(self.frameMain, height=23, xscrollcommand=self.treeScrollX.set, yscrollcommand=self.treeScrollY.set)
+        self.tree = ttk.Treeview(self.frameMain, height=23, yscrollcommand=self.treeScrollY.set)
         self.treeScrollY.config(command=self.tree.yview)
-        self.treeScrollX.config(command=self.tree.xview)
 
         self.tree.delete(*self.tree.get_children())
 
@@ -56,6 +52,7 @@ class mainWindow():
             self.tree.insert("", "end", values=row)
         
         self.tree.grid(row=0, column=0)
+        print(self.scores.dtypes)
 
     def newFile(self):
         newWindow = tk.Toplevel(self.master)
@@ -193,12 +190,13 @@ class newFileWindow:
             l.destroy()
         
         self.mkEvalLabel()
+
     #newFile창의 학생수와 평가항목를 바탕으로 Dataframe을 만들기
     def mkDf(self):
         try:
             t = int(self.totalStudentEnt.get())
             self.df = pd.DataFrame(index=range(1, t+1), columns=["학번", "이름"]+self.evList)
-            
+
             mainWindow.scores = self.df
             mainWindow.display(self.root, self.df)
             self.master.destroy()
@@ -259,14 +257,27 @@ class inputDataWindow:
         self.saveBtn = tk.Button(self.master, text='저장', command=lambda: [self.updateData(), self.save()])
         self.saveBtn.grid(row=5, column=5)
 
+    def setDataType(self):
+        self.data["학번"] = self.data["학번"].astype(str)
+        self.data["이름"] = self.data["이름"].astype(str)
+        for i in self.ev:
+            self.data[i] = pd.to_numeric(self.data[i], errors='coerce', downcast='float')
+        print(self.data.dtypes)
+
     def save(self):
+        self.setDataType()
         mainWindow.scores = self.data
         mainWindow.display(self.root, self.data)
 
     def updateData(self):
         self.data.at[self.studentFocus, '학번'] = self.studentEnt.get()
         self.data.at[self.studentFocus, '이름'] = self.nameEnt.get()
-        self.data.at[self.studentFocus, self.ev[self.evFocus]]= self.scoreEnt.get()
+        try:
+            self.data.at[self.studentFocus, self.ev[self.evFocus]]= self.scoreEnt.get()
+        except ValueError:
+            msg.showerror("경고", "점수칸에는 실수만 입력가능합니다.")
+
+        self.setDataType()
 
     def updateEntries(self):
         self.studentEnt.delete(0, 'end')
@@ -316,7 +327,7 @@ O.필요한 함수들
 I.파일관리
     complete) 새 파일 - pandas 데이터프레임 만들기
     complete) 불러오기 - 엑셀파일을 불러와서 pandas 데이터프레임 만들기
-    3. 저장하기 - 저장하기
+    complete) 저장하기 - 저장하기
     complete) 다른 이름으로 저장하기 - pandas 데이터프레임 엑셀파일로 만들어서 저장하기
 
 II.점수관리
