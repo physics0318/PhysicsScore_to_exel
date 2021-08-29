@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import tkinter as tk
 from tkinter import IntVar, ttk
@@ -9,7 +11,8 @@ from tkinter import messagebox as msg
 class mainWindow():
     def __init__(self, master):
         self.master = master
-        
+        self.master.grid_propagate(0)
+
         self.mainMenu = tk.Menu(self.master)
         self.fMenu = tk.Menu(self.mainMenu, tearoff=0)
         self.fMenu.add_command(label="새 파일", command=self.newFile)
@@ -20,13 +23,13 @@ class mainWindow():
 
         self.fMenu2 = tk.Menu(self.mainMenu, tearoff=0)
         self.fMenu2.add_command(label="편집", command=self.dataInput)
-        self.fMenu2.add_command(label="통계")
+        self.fMenu2.add_command(label="통계", command=self.analyze)
         self.mainMenu.add_cascade(label="데이터", menu=self.fMenu2)
 
         self.master.config(menu=self.mainMenu)
 
     def display(self, df):
-        self.frameMain = tk.Frame(self.master, borderwidth=1, relief="solid", width=700, height=500)
+        self.frameMain = tk.Frame(self.master, borderwidth=1, relief="solid", width=800, height=500)
         self.frameMain.grid_propagate(0)
         self.frameMain.grid(row=0, column=0)
 
@@ -40,7 +43,7 @@ class mainWindow():
 
         self.tree["column"] = list(df.columns)
         for i in df.columns:
-            self.tree.column(i, width=70, minwidth=20)
+            self.tree.column(i, width=45, minwidth=20)
         self.tree["show"] = "headings"
 
         for column in self.tree["column"]:
@@ -52,7 +55,6 @@ class mainWindow():
             self.tree.insert("", "end", values=row)
         
         self.tree.grid(row=0, column=0)
-        print(self.scores.dtypes)
 
     def newFile(self):
         newWindow = tk.Toplevel(self.master)
@@ -95,6 +97,15 @@ class mainWindow():
             inputWindow.geometry("250x150+100+100")
             inputWindow.resizable(False, False)
             i = inputDataWindow(self.master, inputWindow, self.scores)
+        except AttributeError:
+            msg.showerror("경고", "파일을 선택하거나 생성해주세요.")
+
+    def analyze(self):
+        try:
+            analysisWindow = tk.Toplevel(self.master)
+            analysisWindow.geometry("600x400+200+500")
+            analysisWindow.title("통계")
+            a = analysisDataWindow(self.master, analysisWindow, self.scores)
         except AttributeError:
             msg.showerror("경고", "파일을 선택하거나 생성해주세요.")
 
@@ -154,30 +165,31 @@ class newFileWindow:
     #입력받은 평가항목의 개수를 바탕으로 구체적인 평가항목를 작성할 수 있는 Entry가 포함된 새로운 창 표시
     def setEvalList(self):
         try:
-            if int(self.numEvalItemsEnt.get()) > 20:
-                msg.showerror("경고", "평가항목는 20개 이상 만들 수 없습니다.")
+            if int(self.numEvalItemsEnt.get()) > 15:
+                msg.showerror("경고", "평가항목는 15개보다 많이 만들 수 없습니다.")
                 return False
 
-            setting = tk.Toplevel(self.master)
-            setting.geometry("300x600+200+200")
-            setting.title("평가항목 입력")
+            self.setting = tk.Toplevel(self.master)
+            self.setting.geometry("300x600+200+200")
+            self.setting.title("평가항목 입력")
+            self.setting.grab_set()
 
-            name = tk.Label(setting, text="평가항목들을 입력해주세요")
+            name = tk.Label(self.setting, text="평가항목들을 입력해주세요")
             name.grid(row=0, column=1)
 
             rowCnt = 1
             entList = []
             for i in range(int(self.numEvalItemsEnt.get())):
-                lab = tk.Label(setting, text=str(i+1)+". ")
+                lab = tk.Label(self.setting, text=str(i+1)+". ")
                 lab.grid(row=1+i, column=0)
 
-                ent = tk.Entry(setting)
+                ent = tk.Entry(self.setting)
                 ent.grid(row=1+i, column=1)
                 entList.append(ent)
 
                 rowCnt += 1
 
-            submit = tk.Button(setting, text="완료", command=lambda: [self.createEvList(entList), setting.destroy()])
+            submit = tk.Button(self.setting, text="완료", command=lambda: self.createEvList(entList))
             submit.grid(row=rowCnt, column=1)
         except ValueError:
             msg.showerror("경고", "평가 항목를 입력하지 않았습니다.")
@@ -185,11 +197,15 @@ class newFileWindow:
     #setting 창의 Entry로부터 평가항목의 리스트를 만들고 newFile창에 표시
     def createEvList(self, list):
         self.evList = [l.get() for l in list]
+        if len(self.evList) != len(set(self.evList)):
+            msg.showerror("경고", "중복되는 평가항목이 있습니다.")
+            return False
 
         for l in self.evLbl:
             l.destroy()
         
         self.mkEvalLabel()
+        self.setting.destroy()
 
     #newFile창의 학생수와 평가항목를 바탕으로 Dataframe을 만들기
     def mkDf(self):
@@ -207,8 +223,9 @@ class newFileWindow:
 
 class inputDataWindow:
     def __init__(self, root, master, data):
-        self.master = master
         self.root = root
+        self.master = master
+        self.master.grab_set()
         self.data = data
         self.ev = []
         for i in self.data:
@@ -262,7 +279,6 @@ class inputDataWindow:
         self.data["이름"] = self.data["이름"].astype(str)
         for i in self.ev:
             self.data[i] = pd.to_numeric(self.data[i], errors='coerce', downcast='float')
-        print(self.data.dtypes)
 
     def save(self):
         self.setDataType()
@@ -320,6 +336,61 @@ class inputDataWindow:
             self.master.wm_attributes("-topmost", 1)
         else:
             self.master.wm_attributes("-topmost", 0)
+
+class analysisDataWindow:
+    def __init__(self, root, master, data):
+        self.root = root
+        self.master = master
+        self.master.grab_set()
+        self.data = data
+        self.ev = []
+        for i in self.data:
+            self.ev.append(i)
+        self.ev.remove("학번")
+        self.ev.remove("이름")
+        self.sum = [0 for i in range(len(self.data))]
+        
+        self.canvas = tk.Frame(self.master, relief='solid', bd=2, width=400, height=400)
+        self.canvas.grid(row=0, column=0, rowspan=15)
+        self.canvas.grid_propagate(0)
+
+        self.a = IntVar()
+        self.showAvCheck = tk.Checkbutton(self.master, text="평균 표시", command=self.plot, variable=self.a)
+        self.showAvCheck.grid(row=0, column=1)
+
+        self.mkCheckEv()
+
+    def mkCheckEv(self):
+        rowCnt = 1
+        self.v = [0 for i in range(len(self.ev))]
+        for i in range(len(self.ev)):
+            self.v[i] = IntVar()
+            self.checkEv = tk.Checkbutton(self.master, text=self.ev[i], command=lambda: self.dataConverge(), variable=self.v[i])
+            self.checkEv.grid(row=rowCnt, column=1)
+            rowCnt += 1
+
+    def getAvg(self):
+        s = 0
+        for i in self.sum:
+            s += i
+        self.avg = s/len(self.sum)
+
+    def dataConverge(self):
+        self.sum = [0 for i in range(len(self.data))]
+        for i in range(len(self.ev)):
+            if self.v[i].get() == 1:
+                self.sum = self.sum + self.data[self.ev[i]]
+        self.plot()
+
+    def plot(self):
+        self.fig = plt.figure(figsize=(3.8,3.8), dpi=50)
+        plt.hist(self.sum, bins=10)
+        if self.a.get() == 1:
+            self.getAvg()
+            plt.axvline(self.avg, color='r')
+        canvas = FigureCanvasTkAgg(self.fig, self.canvas)
+        canvas.get_tk_widget().grid(row=0, column=0)
+        
 '''
 O.필요한 함수들
     complete) pandas 데이터프레임을 표 형식으로 창에 표시
@@ -338,12 +409,9 @@ II.점수관리
 def main():
     root = tk.Tk()
     root.title("메인 페이지")
-    root.geometry("720x560+100+100")
+    root.geometry("830x560+380+50")
     app = mainWindow(root)
 
-    tree = ttk.Treeview()
-
-    
     root.mainloop()
 
 if __name__ == '__main__':
