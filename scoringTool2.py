@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -390,21 +389,6 @@ class analysisDataWindow:
             plt.axvline(self.avg, color='r')
         canvas = FigureCanvasTkAgg(self.fig, self.canvas)
         canvas.get_tk_widget().grid(row=0, column=0)
-        
-'''
-O.필요한 함수들
-    complete) pandas 데이터프레임을 표 형식으로 창에 표시
-
-I.파일관리
-    complete) 새 파일 - pandas 데이터프레임 만들기
-    complete) 불러오기 - 엑셀파일을 불러와서 pandas 데이터프레임 만들기
-    complete) 저장하기 - 저장하기
-    complete) 다른 이름으로 저장하기 - pandas 데이터프레임 엑셀파일로 만들어서 저장하기
-
-II.점수관리
-    complete) 채점툴 - 기존에 만든 채점툴 활용
-    2. 통계툴 - 지정한 범위의 학생들의 평균, 최고점, 최저점, 표준편차 등을 표시하고 시각화
-'''
 
 def main():
     root = tk.Tk()
