@@ -314,7 +314,7 @@ class inputDataWindow:
         else:
             self.studentFocus -= 1
             if self.studentFocus < 1:
-                self.studentFocus = len(self.data)-1
+                self.studentFocus = len(self.data)
         
         self.updateEntries()
 
